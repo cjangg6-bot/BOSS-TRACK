@@ -1,0 +1,1995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Offline Boss Tracker</title>
+
+  <style>
+    :root {
+      --bg: #090909;
+      --panel: #111;
+      --green: #00ff9c;
+      --cyan: #00ffd5;
+      --blue: #0798f5;
+      --yellow: #ffd400;
+      --red: #ff3838;
+      --orange: #ff9d00;
+      --white: #fff;
+      --line: #333;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 24px 24px 45px 330px;
+      background:
+        radial-gradient(circle at 75% 5%, rgba(0, 140, 255, .08), transparent 30%),
+        radial-gradient(circle at 40% 80%, rgba(0, 255, 156, .06), transparent 35%),
+        var(--bg);
+      color: var(--yellow);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      bottom: 18px;
+      width: 292px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--panel);
+      border: 3px solid var(--green);
+      border-radius: 34px;
+      box-shadow: 0 0 24px rgba(0, 255, 156, .55);
+      z-index: 10;
+    }
+
+    .next-panel {
+      padding: 28px 18px 20px;
+      text-align: center;
+    }
+
+    .next-title {
+      margin-bottom: 20px;
+      color: #eee;
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: 4px;
+    }
+
+    #nextBossName {
+      min-height: 62px;
+      color: var(--yellow);
+      font-size: 26px;
+      line-height: 1.1;
+    }
+
+    #nextTimer {
+      min-height: 50px;
+      margin: 18px 0 10px;
+      color: var(--red);
+      font-size: 40px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    #nextSpawnTime {
+      min-height: 38px;
+      color: var(--yellow);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .progress-wrap {
+      height: 10px;
+      margin-top: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #292929;
+    }
+
+    .progress-bar {
+      width: 0;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--green), var(--cyan));
+      transition: width .25s ease;
+    }
+
+    .settings {
+      margin: 0 18px 18px;
+      padding: 16px;
+      border: 2px solid var(--cyan);
+      border-radius: 14px;
+      background: #050505;
+      box-shadow: 0 0 12px rgba(0, 255, 213, .3);
+    }
+
+    .settings h3 {
+      margin: 0 0 15px;
+      color: var(--cyan);
+      text-align: center;
+      font-size: 16px;
+      letter-spacing: 2px;
+    }
+
+    .setting-label {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: bold;
+    }
+
+    #volumeSlider {
+      width: 100%;
+      accent-color: var(--green);
+    }
+
+    #volumeValue {
+      color: var(--green);
+    }
+
+    .control-button,
+    .secondary-button {
+      width: 100%;
+      min-height: 42px;
+      margin-top: 10px;
+      border: 0;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      transition: box-shadow .2s;
+    }
+
+    .control-button:hover,
+    .secondary-button:hover,
+    .set-button:hover,
+    .killed-button:hover,
+    .clear-button:hover,
+    .now-button:hover,
+    .toolbar button:hover {
+      box-shadow: 0 0 16px rgba(255, 255, 255, .3);
+    }
+
+    #alarmButton {
+      background: var(--yellow);
+      color: #000;
+    }
+
+    #voiceButton,
+    #testVoiceButton {
+      background: var(--green);
+      color: #000;
+    }
+
+    #notificationsButton,
+    #resetButton {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    #alarmButton.off,
+    #voiceButton.off,
+    #notificationsButton.off {
+      background: #555;
+      color: #fff;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .secondary-button {
+      background: #292929;
+      color: #fff;
+    }
+
+    .clock {
+      margin: auto 18px 20px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+      color: #bbb;
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    #currentTime {
+      color: var(--cyan);
+      font-weight: bold;
+    }
+
+    .page-title {
+      margin: 48px 0 10px;
+      color: var(--white);
+      text-align: center;
+      font-size: clamp(40px, 6vw, 76px);
+      font-weight: 900;
+      letter-spacing: 4px;
+    }
+
+    .page-subtitle {
+      margin: 0 0 28px;
+      color: #888;
+      text-align: center;
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    .toolbar {
+      max-width: 1280px;
+      margin: 0 auto 18px;
+      padding: 14px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(17, 17, 17, .9);
+    }
+
+    .toolbar input,
+    .toolbar button {
+      min-height: 42px;
+      border-radius: 9px;
+      padding: 9px 12px;
+    }
+
+    .toolbar input {
+      min-width: 230px;
+      flex: 1 1 230px;
+      border: 1px solid var(--line);
+      background: #050505;
+      color: #fff;
+    }
+
+    .toolbar button {
+      border: 0;
+      background: var(--red);
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .boss-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(285px, 1fr));
+      gap: 22px;
+      max-width: 1280px;
+      margin: 0 auto;
+      align-items: start;
+    }
+
+    /*
+      No transform is used.
+      Cards do not move, lift, or jiggle on hover.
+    */
+    .boss-card {
+      position: relative;
+      min-height: 465px;
+      padding: 18px 16px 16px;
+      background:
+        linear-gradient(rgba(10, 10, 10, .9), rgba(10, 10, 10, .96)),
+        radial-gradient(circle at 50% 0%, #24465d, transparent 48%),
+        #111;
+      border: 2px solid var(--yellow);
+      border-radius: 18px;
+      text-align: center;
+      box-shadow: 0 0 15px rgba(255, 212, 0, .15);
+      transition: border-color .2s, box-shadow .2s;
+    }
+
+    .boss-card:hover {
+      transform: none;
+      box-shadow: 0 0 24px rgba(0, 255, 213, .3);
+    }
+
+    .boss-card.next {
+      border-color: var(--green);
+      box-shadow: 0 0 25px rgba(0, 255, 156, .65);
+    }
+
+    .boss-card.warning {
+      border-color: var(--orange);
+      box-shadow: 0 0 20px rgba(255, 157, 0, .45);
+    }
+
+    .boss-card.critical {
+      border-color: var(--red);
+      box-shadow: 0 0 22px rgba(255, 56, 56, .55);
+    }
+
+    .boss-card.spawned {
+      border-color: var(--green);
+      box-shadow: 0 0 20px rgba(0, 255, 156, .4);
+    }
+
+    .boss-card.idle {
+      border-color: #555;
+      box-shadow: 0 0 10px rgba(255, 255, 255, .04);
+    }
+
+    .boss-card.hidden {
+      display: none;
+    }
+
+    .status-dot {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--yellow);
+    }
+
+    .boss-card.warning .status-dot {
+      background: var(--orange);
+      box-shadow: 0 0 12px var(--orange);
+    }
+
+    .boss-card.critical .status-dot {
+      background: var(--red);
+      box-shadow: 0 0 12px var(--red);
+    }
+
+    .boss-card.spawned .status-dot {
+      background: var(--green);
+      box-shadow: 0 0 12px var(--green);
+    }
+
+    .boss-card.idle .status-dot {
+      background: #666;
+    }
+
+    .boss-type {
+      color: var(--cyan);
+      font-size: 12px;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .boss-name {
+      min-height: 54px;
+      margin: 8px 0;
+      color: #fff;
+      font-size: 23px;
+      font-weight: 900;
+      line-height: 1.08;
+    }
+
+    .timer {
+      min-height: 52px;
+      margin: 13px 0 7px;
+      color: #fff;
+      font-size: 37px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .timer.spawned {
+      color: var(--green);
+      font-size: 31px;
+    }
+
+    .spawn-label {
+      min-height: 40px;
+      color: var(--yellow);
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .boss-card.warning .spawn-label {
+      color: var(--orange);
+    }
+
+    .boss-card.critical .spawn-label {
+      color: var(--red);
+    }
+
+    .main-action-label,
+    .manual-divider {
+      margin-top: 14px;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .manual-divider {
+      color: var(--cyan);
+      text-align: center;
+    }
+
+    .datetime-area {
+      margin-top: 12px;
+      padding: 10px;
+      border: 2px solid var(--cyan);
+      border-radius: 11px;
+      background: #050505;
+      text-align: left;
+      box-shadow: 0 0 10px rgba(0, 255, 213, .25);
+    }
+
+    .datetime-area label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--cyan);
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+
+    .manual-time-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .manual-time-field {
+      width: 100%;
+      height: 40px;
+      border: 2px solid var(--cyan);
+      border-radius: 7px;
+      padding: 5px 7px;
+      background: #000;
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .now-button {
+      width: 100%;
+      min-height: 38px;
+      margin-top: 9px;
+      border: 0;
+      border-radius: 8px;
+      background: var(--green);
+      color: #000;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+
+    .set-button,
+    .killed-button,
+    .clear-button {
+      width: 100%;
+      min-height: 43px;
+      margin-top: 11px;
+      border: 0;
+      border-radius: 9px;
+      color: #fff;
+      font-weight: 900;
+      letter-spacing: 1px;
+      transition: box-shadow .2s;
+    }
+
+    .set-button {
+      background: var(--blue);
+    }
+
+    .killed-button {
+      background: var(--red);
+    }
+
+    .clear-button {
+      background: #444;
+    }
+
+    .respawn-info {
+      margin-top: 10px;
+      color: var(--yellow);
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+
+    .history-panel {
+      max-width: 1050px;
+      margin: 28px auto 0;
+      padding: 16px;
+      background: #111;
+      border: 2px solid var(--cyan);
+      border-radius: 16px;
+      box-shadow: 0 0 18px rgba(0, 255, 213, .3);
+    }
+
+    .history-title {
+      margin: 0 0 13px;
+      color: var(--cyan);
+      text-align: center;
+      font-size: 21px;
+      letter-spacing: 2px;
+    }
+
+    .history-list {
+      max-height: 430px;
+      overflow-y: auto;
+    }
+
+    .history-item {
+      padding: 12px 8px;
+      border-bottom: 1px solid var(--line);
+      color: #9dff00;
+      font-size: 14px;
+      line-height: 1.55;
+    }
+
+    .history-item strong {
+      color: #fff;
+      font-size: 16px;
+    }
+
+    .history-past {
+      color: #ffb1b1;
+    }
+
+    .history-future {
+      color: var(--cyan);
+    }
+
+    .empty-history {
+      padding: 18px;
+      color: #999;
+      text-align: center;
+    }
+
+    .danger {
+      animation: dangerPulse 1s infinite;
+    }
+
+    @keyframes dangerPulse {
+      0% {
+        text-shadow: 0 0 8px rgba(255, 56, 56, .4);
+      }
+
+      50% {
+        text-shadow: 0 0 28px rgba(255, 56, 56, 1);
+      }
+
+      100% {
+        text-shadow: 0 0 8px rgba(255, 56, 56, .4);
+      }
+    }
+
+    @media (max-width: 850px) {
+      body {
+        padding: 15px 12px 30px;
+      }
+
+      .sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        margin-bottom: 22px;
+        border-radius: 22px;
+      }
+
+      .page-title {
+        margin-top: 15px;
+        font-size: 38px;
+      }
+
+      .clock {
+        margin-top: 15px;
+      }
+
+      .toolbar {
+        flex-direction: column;
+      }
+
+      .toolbar input,
+      .toolbar button {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 430px) {
+      .manual-time-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <aside class="sidebar">
+    <section class="next-panel">
+      <div class="next-title">NEXT SPAWN</div>
+      <div id="nextBossName">---</div>
+      <div id="nextTimer">--:--:--</div>
+      <div id="nextSpawnTime">---</div>
+
+      <div class="progress-wrap">
+        <div id="nextProgressBar" class="progress-bar"></div>
+      </div>
+    </section>
+
+    <section class="settings">
+      <h3>VOICE SETTINGS</h3>
+
+      <label class="setting-label" for="volumeSlider">
+        <span>VOICE VOLUME</span>
+        <span id="volumeValue">70%</span>
+      </label>
+
+      <input
+        id="volumeSlider"
+        type="range"
+        min="0"
+        max="100"
+        value="70"
+      >
+
+      <button id="alarmButton" class="control-button">
+        ALARM: ON
+      </button>
+
+      <button id="voiceButton" class="control-button">
+        VOICE: ON
+      </button>
+
+      <button id="notificationsButton" class="control-button">
+        NOTIFY: OFF
+      </button>
+
+      <button id="testVoiceButton" class="control-button">
+        TEST VOICE
+      </button>
+
+      <button id="resetButton" class="control-button">
+        RESET ALL
+      </button>
+
+      <div class="button-row">
+        <button id="exportButton" class="secondary-button">
+          EXPORT
+        </button>
+
+        <button id="importButton" class="secondary-button">
+          IMPORT
+        </button>
+      </div>
+    </section>
+
+    <div class="clock">
+      CURRENT LOCAL TIME<br>
+      <span id="currentTime">---</span>
+    </div>
+  </aside>
+
+  <main>
+    <h1 class="page-title">BOSS TRACKER</h1>
+
+    <p class="page-subtitle">
+      OFFLINE MODE · FIRST COME, FIRST SERVE · SPAWNED BOSSES STAY IN ORDER
+    </p>
+
+    <div class="toolbar">
+      <input
+        id="bossFilter"
+        type="text"
+        placeholder="Filter boss by name or type"
+      >
+
+      <button id="clearHistoryButton">
+        CLEAR HISTORY
+      </button>
+    </div>
+
+    <section id="bossGrid" class="boss-grid"></section>
+
+    <section class="history-panel">
+      <h2 class="history-title">📜 KILL HISTORY</h2>
+      <div id="historyList" class="history-list"></div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "offline-boss-tracker-final";
+
+    const BOSSES = [
+      {
+        name: "CH-0 NINJA KNIFE",
+        type: "NINJA KNIFE",
+        respawnHours: 2
+      },
+      {
+        name: "CH-1 NINJA KNIFE",
+        type: "NINJA KNIFE",
+        respawnHours: 2
+      },
+      {
+        name: "CH-2 NINJA KNIFE",
+        type: "NINJA KNIFE",
+        respawnHours: 2
+      },
+      {
+        name: "CH-3 NINJA KNIFE",
+        type: "NINJA KNIFE",
+        respawnHours: 2
+      },
+      {
+        name: "CH-4 NINJA KNIFE",
+        type: "NINJA KNIFE",
+        respawnHours: 2
+      },
+	  {
+        name: "CH-5 NINJA KNIFE",
+        type: "NINJA KNIFE",
+        respawnHours: 2
+      },
+      {
+        name: "CH-0 CRUEL JUPITER",
+        type: "CRUEL JUPITER",
+        respawnHours: 8
+      },
+      {
+        name: "CH-1 CRUEL JUPITER",
+        type: "CRUEL JUPITER",
+        respawnHours: 8
+      },
+      {
+        name: "CH-2 CRUEL JUPITER",
+        type: "CRUEL JUPITER",
+        respawnHours: 8
+      },
+      {
+        name: "CH-3 CRUEL JUPITER",
+        type: "CRUEL JUPITER",
+        respawnHours: 8
+      },
+      {
+        name: "CH-4 CRUEL JUPITER",
+        type: "CRUEL JUPITER",
+        respawnHours: 8
+      }
+    ];
+
+    const state = {
+      timers: {},
+      history: [],
+      alarmOn: true,
+      voiceEnabled: true,
+      voiceVolume: 0.70,
+      notificationsEnabled: false,
+      filterText: "",
+      announcedFiveMinutes: {},
+      announcedOneMinute: {},
+      announcedSpawn: {},
+      lastVoiceSecond: {}
+    };
+
+    let audioContext = null;
+    let lastCardOrder = "";
+
+    const bossGrid =
+      document.getElementById("bossGrid");
+
+    const historyList =
+      document.getElementById("historyList");
+
+    const nextBossName =
+      document.getElementById("nextBossName");
+
+    const nextTimer =
+      document.getElementById("nextTimer");
+
+    const nextSpawnTime =
+      document.getElementById("nextSpawnTime");
+
+    const nextProgressBar =
+      document.getElementById("nextProgressBar");
+
+    const currentTime =
+      document.getElementById("currentTime");
+
+    const volumeSlider =
+      document.getElementById("volumeSlider");
+
+    const volumeValue =
+      document.getElementById("volumeValue");
+
+    const alarmButton =
+      document.getElementById("alarmButton");
+
+    const voiceButton =
+      document.getElementById("voiceButton");
+
+    const notificationsButton =
+      document.getElementById("notificationsButton");
+
+    const testVoiceButton =
+      document.getElementById("testVoiceButton");
+
+    const resetButton =
+      document.getElementById("resetButton");
+
+    const exportButton =
+      document.getElementById("exportButton");
+
+    const importButton =
+      document.getElementById("importButton");
+
+    const bossFilter =
+      document.getElementById("bossFilter");
+
+    const clearHistoryButton =
+      document.getElementById("clearHistoryButton");
+
+    function isObject(value) {
+      return value &&
+        typeof value === "object" &&
+        !Array.isArray(value);
+    }
+
+    function loadState() {
+      try {
+        const saved =
+          JSON.parse(localStorage.getItem(STORAGE_KEY));
+
+        if (!saved || typeof saved !== "object") {
+          return;
+        }
+
+        state.timers =
+          isObject(saved.timers)
+            ? saved.timers
+            : {};
+
+        state.history =
+          Array.isArray(saved.history)
+            ? saved.history
+            : [];
+
+        state.alarmOn =
+          typeof saved.alarmOn === "boolean"
+            ? saved.alarmOn
+            : true;
+
+        state.voiceEnabled =
+          typeof saved.voiceEnabled === "boolean"
+            ? saved.voiceEnabled
+            : true;
+
+        state.voiceVolume =
+          typeof saved.voiceVolume === "number"
+            ? Math.max(0, Math.min(1, saved.voiceVolume))
+            : 0.70;
+
+        state.notificationsEnabled =
+          typeof saved.notificationsEnabled === "boolean"
+            ? saved.notificationsEnabled
+            : false;
+
+        state.filterText =
+          typeof saved.filterText === "string"
+            ? saved.filterText
+            : "";
+
+        state.announcedFiveMinutes =
+          isObject(saved.announcedFiveMinutes)
+            ? saved.announcedFiveMinutes
+            : {};
+
+        state.announcedOneMinute =
+          isObject(saved.announcedOneMinute)
+            ? saved.announcedOneMinute
+            : {};
+
+        state.announcedSpawn =
+          isObject(saved.announcedSpawn)
+            ? saved.announcedSpawn
+            : {};
+
+        state.lastVoiceSecond =
+          isObject(saved.lastVoiceSecond)
+            ? saved.lastVoiceSecond
+            : {};
+      } catch (error) {
+        console.warn("Could not load saved data.", error);
+      }
+    }
+
+    function saveState() {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(state)
+      );
+    }
+
+    function formatDate(timestamp) {
+      if (!timestamp) {
+        return "None";
+      }
+
+      return new Date(timestamp).toLocaleString();
+    }
+
+    function formatDuration(milliseconds) {
+      if (milliseconds <= 0) {
+        return "SPAWNED!";
+      }
+
+      const totalSeconds =
+        Math.ceil(milliseconds / 1000);
+
+      const hours =
+        Math.floor(totalSeconds / 3600);
+
+      const minutes =
+        Math.floor((totalSeconds % 3600) / 60);
+
+      const seconds =
+        totalSeconds % 60;
+
+      return [
+        String(hours).padStart(2, "0"),
+        String(minutes).padStart(2, "0"),
+        String(seconds).padStart(2, "0")
+      ].join(":");
+    }
+
+    function getLocalDateTimeParts(timestamp = Date.now()) {
+      const date = new Date(timestamp);
+
+      return {
+        date: [
+          date.getFullYear(),
+          String(date.getMonth() + 1).padStart(2, "0"),
+          String(date.getDate()).padStart(2, "0")
+        ].join("-"),
+
+        time: [
+          String(date.getHours()).padStart(2, "0"),
+          String(date.getMinutes()).padStart(2, "0"),
+          String(date.getSeconds()).padStart(2, "0")
+        ].join(":")
+      };
+    }
+
+    function fillCurrentTime(index) {
+      const dateInput =
+        document.getElementById(`date-${index}`);
+
+      const timeInput =
+        document.getElementById(`time-${index}`);
+
+      if (!dateInput || !timeInput) {
+        return;
+      }
+
+      const current =
+        getLocalDateTimeParts();
+
+      dateInput.value = current.date;
+      timeInput.value = current.time;
+    }
+
+    function createBossCards() {
+      bossGrid.innerHTML = "";
+
+      BOSSES.forEach((boss, index) => {
+        const card =
+          document.createElement("article");
+
+        card.className = "boss-card idle";
+        card.id = `boss-card-${index}`;
+        card.dataset.index = String(index);
+
+        card.innerHTML = `
+          <span class="status-dot"></span>
+
+          <div class="boss-type">${boss.type}</div>
+
+          <h2 class="boss-name">${boss.name}</h2>
+
+          <div id="timer-${index}" class="timer">
+            --:--:--
+          </div>
+
+          <div id="spawn-label-${index}" class="spawn-label">
+            Next Spawn: --
+          </div>
+
+          <div class="main-action-label">
+            BOSS DIED NOW?
+          </div>
+
+          <button
+            class="killed-button"
+            data-action="killed-now"
+            data-index="${index}"
+          >
+            KILLED NOW
+          </button>
+
+          <div class="respawn-info">
+            Respawn: ${boss.respawnHours} hours
+          </div>
+
+          <div class="manual-divider">
+            OR SET MANUALLY
+          </div>
+
+          <div class="datetime-area">
+            <label>ENTER DEATH DATE AND TIME</label>
+
+            <div class="manual-time-row">
+              <input
+                id="date-${index}"
+                class="manual-time-field"
+                type="date"
+                aria-label="Death date"
+              >
+
+              <input
+                id="time-${index}"
+                class="manual-time-field"
+                type="time"
+                step="1"
+                aria-label="Death time"
+              >
+            </div>
+
+            <button
+              class="now-button"
+              data-action="use-current-time"
+              data-index="${index}"
+            >
+              USE CURRENT TIME
+            </button>
+          </div>
+
+          <button
+            class="set-button"
+            data-action="set-manual"
+            data-index="${index}"
+          >
+            SET MANUAL DEATH TIME
+          </button>
+
+          <button
+            class="clear-button"
+            data-action="clear-timer"
+            data-index="${index}"
+          >
+            CLEAR TIMER
+          </button>
+        `;
+
+        bossGrid.appendChild(card);
+      });
+    }
+
+    function ensureAudioContext() {
+      if (!audioContext) {
+        const AudioContextClass =
+          window.AudioContext ||
+          window.webkitAudioContext;
+
+        if (AudioContextClass) {
+          audioContext = new AudioContextClass();
+        }
+      }
+
+      if (
+        audioContext &&
+        audioContext.state === "suspended"
+      ) {
+        audioContext.resume();
+      }
+
+      return audioContext;
+    }
+
+    function playBeep(frequency = 880, duration = 0.25) {
+      if (!state.alarmOn || !state.voiceEnabled) {
+        return;
+      }
+
+      try {
+        const context = ensureAudioContext();
+
+        if (!context) {
+          return;
+        }
+
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+
+        oscillator.type = "triangle";
+        oscillator.frequency.value = frequency;
+
+        gain.gain.setValueAtTime(
+          0.0001,
+          context.currentTime
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+          Math.max(0.01, state.voiceVolume * 0.22),
+          context.currentTime + 0.02
+        );
+
+        gain.gain.exponentialRampToValueAtTime(
+          0.0001,
+          context.currentTime + duration
+        );
+
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+
+        oscillator.start();
+        oscillator.stop(context.currentTime + duration);
+      } catch (error) {
+        console.warn("Could not play beep.", error);
+      }
+    }
+
+    function speak(message) {
+      if (
+        !state.alarmOn ||
+        !state.voiceEnabled ||
+        !("speechSynthesis" in window)
+      ) {
+        return;
+      }
+
+      try {
+        window.speechSynthesis.cancel();
+
+        const utterance =
+          new SpeechSynthesisUtterance(message);
+
+        utterance.volume = state.voiceVolume;
+        utterance.rate = 1;
+        utterance.pitch = 1;
+
+        window.speechSynthesis.speak(utterance);
+      } catch (error) {
+        console.warn("Could not speak announcement.", error);
+      }
+    }
+
+    function sendNotification(title, body) {
+      if (
+        !state.notificationsEnabled ||
+        !("Notification" in window) ||
+        Notification.permission !== "granted"
+      ) {
+        return;
+      }
+
+      try {
+        new Notification(title, {
+          body,
+          tag: "offline-boss-tracker"
+        });
+      } catch (error) {
+        console.warn("Could not send notification.", error);
+      }
+    }
+
+    function addHistoryEntry(entry) {
+      state.history.unshift({
+        ...entry,
+        recordedAt: Date.now()
+      });
+
+      state.history = state.history.slice(0, 300);
+
+      saveState();
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (!state.history.length) {
+        historyList.innerHTML = `
+          <div class="empty-history">
+            No kill history yet.
+          </div>
+        `;
+
+        return;
+      }
+
+      historyList.innerHTML =
+        state.history.map((entry) => `
+          <div class="history-item">
+            <strong>${entry.bossName}</strong><br>
+            Action: ${entry.action}<br>
+
+            <span class="history-past">
+              Death time: ${formatDate(entry.deathTime)}
+            </span><br>
+
+            <span class="history-past">
+              Previous timer:
+              ${formatDate(entry.previousTimer)}
+            </span><br>
+
+            <span class="history-future">
+              Future spawn:
+              ${formatDate(entry.futureSpawn)}
+            </span><br>
+
+            Recorded:
+            ${formatDate(entry.recordedAt)}
+          </div>
+        `).join("");
+    }
+
+    function resetAlerts(index) {
+      state.announcedFiveMinutes[index] = false;
+      state.announcedOneMinute[index] = false;
+      state.announcedSpawn[index] = false;
+      state.lastVoiceSecond[index] = null;
+    }
+
+    function killedNow(index) {
+      const boss = BOSSES[index];
+      const deathTime = Date.now();
+      const previousTimer =
+        state.timers[index] || null;
+
+      const futureSpawn =
+        deathTime +
+        boss.respawnHours * 60 * 60 * 1000;
+
+      state.timers[index] = futureSpawn;
+
+      resetAlerts(index);
+      fillCurrentTime(index);
+
+      addHistoryEntry({
+        bossName: boss.name,
+        action:
+          `Killed Now - ${boss.respawnHours}-hour respawn`,
+        deathTime,
+        previousTimer,
+        futureSpawn
+      });
+
+      playBeep(600, 0.2);
+
+      speak(
+        `${boss.name} killed. ` +
+        `Respawning in ${boss.respawnHours} hours.`
+      );
+
+      sendNotification(
+        "Boss Timer Started",
+        `${boss.name} will spawn at ${formatDate(futureSpawn)}.`
+      );
+
+      updateTimers();
+    }
+
+    function setManualTimer(index) {
+      const boss = BOSSES[index];
+
+      const dateInput =
+        document.getElementById(`date-${index}`);
+
+      const timeInput =
+        document.getElementById(`time-${index}`);
+
+      if (
+        !dateInput ||
+        !timeInput ||
+        !dateInput.value ||
+        !timeInput.value
+      ) {
+        alert(
+          "Please enter both the death date and death time."
+        );
+
+        return;
+      }
+
+      const localDateTime =
+        `${dateInput.value}T${timeInput.value}`;
+
+      const deathTime =
+        new Date(localDateTime).getTime();
+
+      if (Number.isNaN(deathTime)) {
+        alert("The selected date or time is invalid.");
+        return;
+      }
+
+      if (state.timers[index]) {
+        const overwrite =
+          confirm(
+            `Overwrite the existing timer for ${boss.name}?`
+          );
+
+        if (!overwrite) {
+          return;
+        }
+      }
+
+      const previousTimer =
+        state.timers[index] || null;
+
+      const futureSpawn =
+        deathTime +
+        boss.respawnHours * 60 * 60 * 1000;
+
+      state.timers[index] = futureSpawn;
+      resetAlerts(index);
+
+      addHistoryEntry({
+        bossName: boss.name,
+        action:
+          `Manual death time - ${boss.respawnHours}-hour respawn`,
+        deathTime,
+        previousTimer,
+        futureSpawn
+      });
+
+      updateTimers();
+    }
+
+    function clearBossTimer(index) {
+      const boss = BOSSES[index];
+
+      if (!confirm(`Clear the timer for ${boss.name}?`)) {
+        return;
+      }
+
+      delete state.timers[index];
+      resetAlerts(index);
+
+      const dateInput =
+        document.getElementById(`date-${index}`);
+
+      const timeInput =
+        document.getElementById(`time-${index}`);
+
+      if (dateInput) {
+        dateInput.value = "";
+      }
+
+      if (timeInput) {
+        timeInput.value = "";
+      }
+
+      saveState();
+      updateTimers();
+    }
+
+    function getSortedIndices() {
+      return BOSSES
+        .map((_, index) => index)
+        .sort((a, b) => {
+          const spawnA =
+            Number(state.timers[a]) || Infinity;
+
+          const spawnB =
+            Number(state.timers[b]) || Infinity;
+
+          if (spawnA !== spawnB) {
+            return spawnA - spawnB;
+          }
+
+          return a - b;
+        });
+    }
+
+    /*
+      Important:
+      The DOM is only rearranged when the actual order changes.
+      updateTimers() runs often, but this prevents the date/time
+      picker from closing while the user is entering a value.
+    */
+    function sortBossCards() {
+      const sortedIndices = getSortedIndices();
+      const newOrder = sortedIndices.join(",");
+
+      if (newOrder === lastCardOrder) {
+        applyBossFilter();
+        return;
+      }
+
+      lastCardOrder = newOrder;
+
+      sortedIndices.forEach((index) => {
+        const card =
+          document.getElementById(`boss-card-${index}`);
+
+        if (card) {
+          bossGrid.appendChild(card);
+        }
+      });
+
+      applyBossFilter();
+    }
+
+    function applyBossFilter() {
+      const query =
+        typeof bossFilter.value === "string"
+          ? bossFilter.value.trim().toLowerCase()
+          : "";
+
+      BOSSES.forEach((boss, index) => {
+        const card =
+          document.getElementById(`boss-card-${index}`);
+
+        if (!card) {
+          return;
+        }
+
+        const matches =
+          !query ||
+          boss.name.toLowerCase().includes(query) ||
+          boss.type.toLowerCase().includes(query);
+
+        card.classList.toggle("hidden", !matches);
+      });
+    }
+
+    function getBossStatus(index, now) {
+      const spawnTime =
+        Number(state.timers[index]) || 0;
+
+      if (!spawnTime) {
+        return "idle";
+      }
+
+      const remaining =
+        spawnTime - now;
+
+      if (remaining <= 0) {
+        return "spawned";
+      }
+
+      if (remaining <= 60 * 1000) {
+        return "critical";
+      }
+
+      if (remaining <= 5 * 60 * 1000) {
+        return "warning";
+      }
+
+      return "active";
+    }
+
+    function updateNextBossInfo() {
+      const now = Date.now();
+
+      const futureBosses =
+        BOSSES
+          .map((boss, index) => ({
+            boss,
+            index,
+            spawnTime:
+              Number(state.timers[index]) || 0
+          }))
+          .filter((item) => item.spawnTime > now)
+          .sort((a, b) =>
+            a.spawnTime - b.spawnTime
+          );
+
+      if (!futureBosses.length) {
+        nextBossName.textContent = "---";
+        nextTimer.textContent = "--:--:--";
+        nextSpawnTime.textContent = "---";
+        nextProgressBar.style.width = "0%";
+        nextTimer.classList.remove("danger");
+        return;
+      }
+
+      const next = futureBosses[0];
+      const remaining = next.spawnTime - now;
+
+      const maxRange =
+        next.boss.respawnHours *
+        60 *
+        60 *
+        1000;
+
+      const progress =
+        ((maxRange - remaining) / maxRange) * 100;
+
+      nextBossName.textContent = next.boss.name;
+      nextTimer.textContent = formatDuration(remaining);
+      nextSpawnTime.textContent =
+        `Spawns at: ${formatDate(next.spawnTime)}`;
+
+      nextProgressBar.style.width =
+        `${Math.min(100, Math.max(0, progress))}%`;
+
+      nextTimer.classList.toggle(
+        "danger",
+        remaining <= 5 * 60 * 1000
+      );
+    }
+
+    function updateClock() {
+      currentTime.textContent =
+        new Date().toLocaleString();
+    }
+
+    function updateTimers() {
+      const now = Date.now();
+
+      /*
+        Sorting is safe now because sortBossCards()
+        only changes the DOM when the order changes.
+      */
+      sortBossCards();
+
+      BOSSES.forEach((boss, index) => {
+        const card =
+          document.getElementById(`boss-card-${index}`);
+
+        const timerElement =
+          document.getElementById(`timer-${index}`);
+
+        const spawnLabel =
+          document.getElementById(`spawn-label-${index}`);
+
+        if (!card || !timerElement || !spawnLabel) {
+          return;
+        }
+
+        const spawnTime =
+          Number(state.timers[index]) || 0;
+
+        const status =
+          getBossStatus(index, now);
+
+        card.classList.remove(
+          "next",
+          "warning",
+          "critical",
+          "spawned",
+          "idle",
+          "active"
+        );
+
+        timerElement.classList.remove("spawned");
+
+        if (!spawnTime) {
+          timerElement.textContent = "--:--:--";
+          spawnLabel.textContent = "Next Spawn: --";
+          card.classList.add("idle");
+          return;
+        }
+
+        const remaining =
+          spawnTime - now;
+
+        if (remaining <= 0) {
+          timerElement.textContent = "SPAWNED!";
+          timerElement.classList.add("spawned");
+          spawnLabel.textContent = "NOW";
+          card.classList.add("spawned");
+
+          if (!state.announcedSpawn[index]) {
+            playBeep(1200, 0.45);
+            speak(`${boss.name} has spawned`);
+
+            sendNotification(
+              "Boss Spawned",
+              `${boss.name} has spawned.`
+            );
+
+            state.announcedSpawn[index] = true;
+            saveState();
+          }
+
+          return;
+        }
+
+        timerElement.textContent =
+          formatDuration(remaining);
+
+        spawnLabel.textContent =
+          `Next: ${formatDate(spawnTime)}`;
+
+        card.classList.add(status);
+
+        if (
+          remaining <= 5 * 60 * 1000 &&
+          !state.announcedFiveMinutes[index]
+        ) {
+          speak(
+            `${boss.name} will spawn in 5 minutes`
+          );
+
+          sendNotification(
+            "Boss Warning",
+            `${boss.name} will spawn in 5 minutes.`
+          );
+
+          state.announcedFiveMinutes[index] = true;
+          saveState();
+        }
+
+        if (
+          remaining <= 60 * 1000 &&
+          !state.announcedOneMinute[index]
+        ) {
+          speak(
+            `${boss.name} will spawn in 1 minute`
+          );
+
+          sendNotification(
+            "Boss Warning",
+            `${boss.name} will spawn in 1 minute.`
+          );
+
+          state.announcedOneMinute[index] = true;
+          saveState();
+        }
+
+        if (remaining <= 10000) {
+          const secondsLeft =
+            Math.ceil(remaining / 1000);
+
+          if (
+            secondsLeft >= 1 &&
+            secondsLeft <= 10 &&
+            state.lastVoiceSecond[index] !== secondsLeft
+          ) {
+            speak(String(secondsLeft));
+            playBeep(950, 0.16);
+
+            state.lastVoiceSecond[index] =
+              secondsLeft;
+
+            saveState();
+          }
+        } else {
+          state.lastVoiceSecond[index] = null;
+        }
+      });
+
+      const nextFutureBoss =
+        BOSSES
+          .map((boss, index) => ({
+            index,
+            spawnTime:
+              Number(state.timers[index]) || 0
+          }))
+          .filter((item) => item.spawnTime > now)
+          .sort((a, b) =>
+            a.spawnTime - b.spawnTime
+          )[0];
+
+      if (nextFutureBoss) {
+        const nextCard =
+          document.getElementById(
+            `boss-card-${nextFutureBoss.index}`
+          );
+
+        if (nextCard) {
+          nextCard.classList.add("next");
+        }
+      }
+
+      updateNextBossInfo();
+    }
+
+    function exportState() {
+      const backup = {
+        timers: state.timers,
+        history: state.history,
+        alarmOn: state.alarmOn,
+        voiceEnabled: state.voiceEnabled,
+        voiceVolume: state.voiceVolume,
+        notificationsEnabled:
+          state.notificationsEnabled
+      };
+
+      const blob =
+        new Blob(
+          [JSON.stringify(backup, null, 2)],
+          { type: "application/json" }
+        );
+
+      const url =
+        URL.createObjectURL(blob);
+
+      const link =
+        document.createElement("a");
+
+      link.href = url;
+      link.download =
+        "offline-boss-tracker-backup.json";
+
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function importState() {
+      const json =
+        prompt("Paste your exported JSON backup:");
+
+      if (!json) {
+        return;
+      }
+
+      try {
+        const imported =
+          JSON.parse(json);
+
+        state.timers =
+          isObject(imported.timers)
+            ? imported.timers
+            : {};
+
+        state.history =
+          Array.isArray(imported.history)
+            ? imported.history
+            : [];
+
+        state.alarmOn =
+          typeof imported.alarmOn === "boolean"
+            ? imported.alarmOn
+            : true;
+
+        state.voiceEnabled =
+          typeof imported.voiceEnabled === "boolean"
+            ? imported.voiceEnabled
+            : true;
+
+        state.voiceVolume =
+          typeof imported.voiceVolume === "number"
+            ? imported.voiceVolume
+            : 0.70;
+
+        state.notificationsEnabled =
+          typeof imported.notificationsEnabled === "boolean"
+            ? imported.notificationsEnabled
+            : false;
+
+        state.announcedFiveMinutes = {};
+        state.announcedOneMinute = {};
+        state.announcedSpawn = {};
+        state.lastVoiceSecond = {};
+        lastCardOrder = "";
+
+        saveState();
+        renderHistory();
+        syncControls();
+        updateTimers();
+
+        alert("Backup imported successfully.");
+      } catch (error) {
+        alert("Import failed. The backup is invalid.");
+      }
+    }
+
+    function syncControls() {
+      volumeSlider.value =
+        Math.round(state.voiceVolume * 100);
+
+      volumeValue.textContent =
+        `${volumeSlider.value}%`;
+
+      alarmButton.textContent =
+        state.alarmOn
+          ? "ALARM: ON"
+          : "ALARM: SILENT";
+
+      alarmButton.classList.toggle(
+        "off",
+        !state.alarmOn
+      );
+
+      voiceButton.textContent =
+        state.voiceEnabled
+          ? "VOICE: ON"
+          : "VOICE: OFF";
+
+      voiceButton.classList.toggle(
+        "off",
+        !state.voiceEnabled
+      );
+
+      notificationsButton.textContent =
+        state.notificationsEnabled
+          ? "NOTIFY: ON"
+          : "NOTIFY: OFF";
+
+      notificationsButton.classList.toggle(
+        "off",
+        !state.notificationsEnabled
+      );
+
+      bossFilter.value =
+        typeof state.filterText === "string"
+          ? state.filterText
+          : "";
+    }
+
+    bossGrid.addEventListener("click", (event) => {
+      const button =
+        event.target.closest("button");
+
+      if (!button) {
+        return;
+      }
+
+      const action =
+        button.dataset.action;
+
+      const index =
+        Number(button.dataset.index);
+
+      if (action === "killed-now") {
+        killedNow(index);
+      }
+
+      if (action === "set-manual") {
+        setManualTimer(index);
+      }
+
+      if (action === "use-current-time") {
+        fillCurrentTime(index);
+      }
+
+      if (action === "clear-timer") {
+        clearBossTimer(index);
+      }
+    });
+
+    volumeSlider.addEventListener("input", () => {
+      const percentage =
+        Number(volumeSlider.value);
+
+      state.voiceVolume =
+        percentage / 100;
+
+      volumeValue.textContent =
+        `${percentage}%`;
+
+      saveState();
+    });
+
+    alarmButton.addEventListener("click", () => {
+      state.alarmOn = !state.alarmOn;
+      syncControls();
+      saveState();
+    });
+
+    voiceButton.addEventListener("click", () => {
+      state.voiceEnabled = !state.voiceEnabled;
+      syncControls();
+      saveState();
+    });
+
+    notificationsButton.addEventListener(
+      "click",
+      async () => {
+        if (!("Notification" in window)) {
+          alert(
+            "This browser does not support notifications."
+          );
+
+          return;
+        }
+
+        if (
+          Notification.permission === "default"
+        ) {
+          const permission =
+            await Notification.requestPermission();
+
+          state.notificationsEnabled =
+            permission === "granted";
+        } else {
+          state.notificationsEnabled =
+            !state.notificationsEnabled;
+        }
+
+        syncControls();
+        saveState();
+      }
+    );
+
+    testVoiceButton.addEventListener("click", () => {
+      ensureAudioContext();
+      playBeep(880, 0.25);
+      speak(
+        "Voice volume test. The alarm is working."
+      );
+    });
+
+    resetButton.addEventListener("click", () => {
+      if (
+        !confirm(
+          "Reset all timers and clear all kill history?"
+        )
+      ) {
+        return;
+      }
+
+      state.timers = {};
+      state.history = [];
+      state.announcedFiveMinutes = {};
+      state.announcedOneMinute = {};
+      state.announcedSpawn = {};
+      state.lastVoiceSecond = {};
+      lastCardOrder = "";
+
+      saveState();
+      renderHistory();
+      updateTimers();
+    });
+
+    exportButton.addEventListener("click", exportState);
+    importButton.addEventListener("click", importState);
+
+    bossFilter.addEventListener("input", () => {
+      state.filterText =
+        bossFilter.value.trim();
+
+      saveState();
+      applyBossFilter();
+    });
+
+    clearHistoryButton.addEventListener(
+      "click",
+      () => {
+        if (!confirm("Clear all kill history?")) {
+          return;
+        }
+
+        state.history = [];
+        saveState();
+        renderHistory();
+      }
+    );
+
+    function initialize() {
+      loadState();
+
+      if (typeof state.filterText !== "string") {
+        state.filterText = "";
+      }
+
+      createBossCards();
+      renderHistory();
+      syncControls();
+      updateClock();
+      updateTimers();
+
+      setInterval(updateClock, 1000);
+
+      /*
+        The timer can refresh frequently without moving
+        the cards repeatedly or closing the time picker.
+      */
+      setInterval(updateTimers, 250);
+    }
+
+    initialize();
+  </script>
+</body>
+</html>
